@@ -8,3 +8,5 @@ __pycache__
 
 P11_Python_Testing/
 !P11_Python_Testing/*.py
+
+venv/
