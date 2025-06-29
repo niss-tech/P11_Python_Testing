@@ -2,6 +2,10 @@ bin
 include
 lib
 .Python
-tests/
+# tests/
 .envrc
 __pycache__
+
+# Ignore environnement virtuel local
+P11_Python_Testing/
+!P11_Python_Testing/*.py
