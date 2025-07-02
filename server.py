@@ -1,5 +1,6 @@
 import json
 from flask import Flask, render_template, request, redirect, flash, url_for
+from datetime import datetime
 
 # Chargement des données depuis les fichiers JSON
 def loadClubs():
@@ -51,15 +52,30 @@ def showSummary():
     return render_template('welcome.html', club=club, competitions=competitions_data)
 
 
+
 @app.route('/book/<competition>/<club>')
-def book(competition,club):
-    foundClub = [c for c in clubs if c['name'] == club][0]
-    foundCompetition = [c for c in competitions if c['name'] == competition][0]
-    if foundClub and foundCompetition:
-        return render_template('booking.html',club=foundClub,competition=foundCompetition)
-    else:
-        flash("Something went wrong-please try again")
-        return render_template('welcome.html', club=club, competitions=competitions)
+def book(competition, club):
+    # Récupération des données dynamiques, selon que l’on soit en mode test ou exécution normale
+    clubs_data = get_clubs()
+    competitions_data = get_competitions()
+
+    # Recherche du club et de la compétition dans les données
+    foundClub = next((c for c in clubs_data if c['name'] == club), None)
+    foundCompetition = next((c for c in competitions_data if c['name'] == competition), None)
+
+    # Si club ou compétition introuvables → redirection avec message
+    if not foundClub or not foundCompetition:
+        flash("Club or competition not found.")
+        return redirect(url_for('index'))
+
+    # Vérifie que la date de la compétition est dans le futur
+    competition_date = datetime.strptime(foundCompetition['date'], "%Y-%m-%d %H:%M:%S")
+    if competition_date < datetime.now():
+        flash("You cannot book a competition that has already taken place.")
+        return render_template('welcome.html', club=foundClub, competitions=competitions_data)
+
+    # Si tout est bon, afficher la page de réservation
+    return render_template('booking.html', club=foundClub, competition=foundCompetition)
 
 
 
