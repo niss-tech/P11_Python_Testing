@@ -104,7 +104,6 @@ def purchasePlaces():
     # Mise à jour des données
     competition['numberOfPlaces'] = str(int(availablePlaces) - placesRequired)
     club['points'] = str(int(club['points']) - placesRequired)
-
     flash('Great-booking complete!')
     return render_template('welcome.html', club=club, competitions=competitions_data)
 
