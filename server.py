@@ -10,7 +10,7 @@ def loadCompetitions():
     with open('competitions.json') as comps:
         return json.load(comps)['competitions']
 
-# Application Flask
+
 app = Flask(__name__)
 app.secret_key = 'something_special'
 
@@ -25,7 +25,7 @@ def get_clubs():
 def get_competitions():
     return getattr(app, 'competitions', competitions)
 
-# Routes
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -56,13 +56,15 @@ def purchasePlaces():
     if not competition or not club:
         flash("Club or competition not found.")
         return redirect(url_for('index'))
-
+    
+    # S’assurer que les places demandées sont bien un entier
     try:
         placesRequired = int(request.form['places'])
     except ValueError:
         flash("Invalid number of places.")
         return render_template('welcome.html', club=club, competitions=competitions_data)
-
+    
+     # Règle métier ajoutée: interdire la réservation de plus de places que disponibles
     availablePlaces = int(competition['numberOfPlaces'])
 
     if placesRequired > availablePlaces:
