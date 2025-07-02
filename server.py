@@ -17,8 +17,16 @@ def loadCompetitions():
 app = Flask(__name__)
 app.secret_key = 'something_special'
 
-app.clubs = loadClubs()
-app.competitions = loadCompetitions()
+# Données globales par défaut
+clubs = loadClubs()
+competitions = loadCompetitions()
+
+# Accès aux données en fonction du contexte (tests ou run normal)
+def get_clubs():
+    return getattr(app, 'clubs', clubs)
+
+def get_competitions():
+    return getattr(app, 'competitions', competitions)
 
 @app.route('/')
 def index():
@@ -26,41 +34,50 @@ def index():
 
 @app.route('/showSummary',methods=['POST'])
 def showSummary():
-    club = [club for club in app.clubs if club['email'] == request.form['email']][0]
-    return render_template('welcome.html',club=club,competitions=app.competitions)
+    club = [club for club in clubs if club['email'] == request.form['email']][0]
+    return render_template('welcome.html',club=club,competitions=competitions)
 
 
 @app.route('/book/<competition>/<club>')
 def book(competition,club):
-    foundClub = [c for c in app.clubs if c['name'] == club][0]
-    foundCompetition = [c for c in app.competitions if c['name'] == competition][0]
+    foundClub = [c for c in clubs if c['name'] == club][0]
+    foundCompetition = [c for c in competitions if c['name'] == competition][0]
     if foundClub and foundCompetition:
         return render_template('booking.html',club=foundClub,competition=foundCompetition)
     else:
         flash("Something went wrong-please try again")
-        return render_template('welcome.html', club=club, competitions=app.competitions)
+        return render_template('welcome.html', club=club, competitions=competitions)
 
 
 @app.route('/purchasePlaces', methods=['POST'])
 def purchasePlaces():
-    competition = next((c for c in app.competitions if c['name'] == request.form['competition']), None)
-    club = next((c for c in app.clubs if c['name'] == request.form['club']), None)
+    # Récupération dynamique des données (permet l’override en test)
+    clubs_data = get_clubs()
+    competitions_data = get_competitions()
 
+    # Recherche du club et de la compétition sélectionnés via le formulaire
+    competition = next((c for c in competitions_data if c['name'] == request.form['competition']), None)
+    club = next((c for c in clubs_data if c['name'] == request.form['club']), None)
+
+    # Si l’un des deux n’est pas trouvé, redirection vers la page d’accueil avec un message
     if not competition or not club:
         flash("Club or competition not found.")
         return redirect(url_for('index'))
 
     placesRequired = int(request.form['places'])
+    
 
+    # Vérifie si le club a suffisamment de points pour réserver
     if placesRequired > int(club['points']):
-        flash("not enough points")
+        flash("Not enough points")
         return render_template('booking.html', club=club, competition=competition)
 
-    competition['numberOfPlaces'] = int(competition['numberOfPlaces']) - placesRequired
-    club['points'] = int(club['points']) - placesRequired
+    # Mise à jour des données après validation
+    competition['numberOfPlaces'] = str(int(competition['numberOfPlaces']) - placesRequired)
+    club['points'] = str(int(club['points']) - placesRequired)
 
     flash('Great-booking complete!')
-    return render_template('welcome.html', club=club, competitions=app.competitions)
+    return render_template('welcome.html', club=club, competitions=competitions_data)
 
 
 
