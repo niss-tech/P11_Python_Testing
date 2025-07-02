@@ -3,6 +3,12 @@ include
 lib
 .Python
 
+# tests/
 .envrc
 __pycache__
 venv/
+
+# Ignore environnement virtuel local
+P11_Python_Testing/
+!P11_Python_Testing/*.py
+

@@ -18,6 +18,7 @@ app.secret_key = 'something_special'
 clubs = loadClubs()
 competitions = loadCompetitions()
 
+
 # Accès aux données en fonction du contexte (tests ou run normal)
 def get_clubs():
     return getattr(app, 'clubs', clubs)
@@ -25,22 +26,31 @@ def get_clubs():
 def get_competitions():
     return getattr(app, 'competitions', competitions)
 
-
-# Accès aux données en fonction du contexte (tests ou run normal)
-def get_clubs():
-    return app.clubs if hasattr(app, 'clubs') else clubs
-
-def get_competitions():
-    return app.competitions if hasattr(app, 'competitions') else competitions
-
 @app.route('/')
 def index():
     return render_template('index.html')
 
-@app.route('/showSummary',methods=['POST'])
+@app.route('/showSummary', methods=['POST'])
 def showSummary():
-    club = [club for club in clubs if club['email'] == request.form['email']][0]
-    return render_template('welcome.html',club=club,competitions=competitions)
+    # Récupère les données dynamiques actuelles des clubs et compétitions
+    clubs_data = get_clubs()
+    competitions_data = get_competitions()
+
+    # Récupère l’email saisi dans le formulaire de connexion
+    email_entered = request.form['email']
+
+    # Cherche un club correspondant à cet email dans les données chargées
+    matching_clubs = [club for club in clubs_data if club['email'] == email_entered]
+
+    # Si aucun club ne correspond à l’email, on affiche un message d'erreur et on redirige vers l'accueil
+    if not matching_clubs:
+        flash("Sorry, that email wasn't found.")
+        return redirect(url_for('index'))
+
+    # Si un club a été trouvé, on l’affiche avec la liste des compétitions dans la page d’accueil utilisateur
+    club = matching_clubs[0]
+    return render_template('welcome.html', club=club, competitions=competitions_data)
+
 
 @app.route('/book/<competition>/<club>')
 def book(competition,club):
@@ -92,7 +102,10 @@ def purchasePlaces():
     flash('Great-booking complete!')
     return render_template('welcome.html', club=club, competitions=competitions_data)
 
-# TODO: Add route for points display
+@app.route('/points')
+def display_points():
+    clubs_data = get_clubs()  # Accès aux données dynamiques comme dans les autres routes
+    return render_template('points.html', clubs=clubs_data)
 
 @app.route('/logout')
 def logout():
