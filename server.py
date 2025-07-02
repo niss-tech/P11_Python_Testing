@@ -26,6 +26,13 @@ def get_competitions():
     return getattr(app, 'competitions', competitions)
 
 
+# Accès aux données en fonction du contexte (tests ou run normal)
+def get_clubs():
+    return app.clubs if hasattr(app, 'clubs') else clubs
+
+def get_competitions():
+    return app.competitions if hasattr(app, 'competitions') else competitions
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -44,6 +51,8 @@ def book(competition,club):
     else:
         flash("Something went wrong-please try again")
         return render_template('welcome.html', club=club, competitions=competitions)
+
+
 
 @app.route('/purchasePlaces', methods=['POST'])
 def purchasePlaces():
@@ -64,15 +73,21 @@ def purchasePlaces():
         flash("Invalid number of places.")
         return render_template('welcome.html', club=club, competitions=competitions_data)
     
-     # Règle métier ajoutée: interdire la réservation de plus de places que disponibles
+     
+    # Règle métier ajoutée: interdire la réservation de plus de places que disponibles
     availablePlaces = int(competition['numberOfPlaces'])
-
     if placesRequired > availablePlaces:
         flash("Cannot book more places than are available in the competition.")
         return render_template('welcome.html', club=club, competitions=competitions_data)
 
+    # Nouvelle règle : maximum 12 places par réservation
+    if placesRequired > 12:
+        flash("Cannot book more than 12 places")
+        return render_template('welcome.html', club=club, competitions=competitions_data)
 
-    competition['numberOfPlaces'] = str(availablePlaces - placesRequired)
+
+    # Mise à jour des données
+    competition['numberOfPlaces'] = str(int(availablePlaces) - placesRequired)
     club['points'] = str(int(club['points']) - placesRequired)
     flash('Great-booking complete!')
     return render_template('welcome.html', club=club, competitions=competitions_data)
