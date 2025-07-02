@@ -5,6 +5,7 @@ lib
 # tests/
 .envrc
 __pycache__
+venv/
 
 # Ignore environnement virtuel local
 P11_Python_Testing/
