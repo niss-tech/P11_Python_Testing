@@ -18,7 +18,6 @@ app.secret_key = 'something_special'
 clubs = loadClubs()
 competitions = loadCompetitions()
 
-
 # Accès aux données en fonction du contexte (tests ou run normal)
 def get_clubs():
     return getattr(app, 'clubs', clubs)
@@ -83,7 +82,8 @@ def purchasePlaces():
         flash("Invalid number of places.")
         return render_template('welcome.html', club=club, competitions=competitions_data)
     
-     
+    placesRequired = int(request.form['places'])
+
     # Règle métier ajoutée: interdire la réservation de plus de places que disponibles
     availablePlaces = int(competition['numberOfPlaces'])
     if placesRequired > availablePlaces:
@@ -94,13 +94,20 @@ def purchasePlaces():
     if placesRequired > 12:
         flash("Cannot book more than 12 places")
         return render_template('welcome.html', club=club, competitions=competitions_data)
+    
+    # Vérifie si le club a suffisamment de points pour réserver
+    if placesRequired > int(club['points']):
+        flash("Not enough points")
+        return render_template('booking.html', club=club, competition=competition)
 
 
     # Mise à jour des données
     competition['numberOfPlaces'] = str(int(availablePlaces) - placesRequired)
     club['points'] = str(int(club['points']) - placesRequired)
+
     flash('Great-booking complete!')
     return render_template('welcome.html', club=club, competitions=competitions_data)
+
 
 @app.route('/points')
 def display_points():
