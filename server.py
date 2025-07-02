@@ -17,8 +17,16 @@ def loadCompetitions():
 app = Flask(__name__)
 app.secret_key = 'something_special'
 
-competitions = loadCompetitions()
+# Données globales par défaut
 clubs = loadClubs()
+competitions = loadCompetitions()
+
+# Accès aux données en fonction du contexte (tests ou run normal)
+def get_clubs():
+    return getattr(app, 'clubs', clubs)
+
+def get_competitions():
+    return getattr(app, 'competitions', competitions)
 
 @app.route('/')
 def index():
@@ -41,15 +49,25 @@ def book(competition,club):
         return render_template('welcome.html', club=club, competitions=competitions)
 
 
-@app.route('/purchasePlaces',methods=['POST'])
+@app.route('/purchasePlaces', methods=['POST'])
 def purchasePlaces():
-    competition = [c for c in competitions if c['name'] == request.form['competition']][0]
-    club = [c for c in clubs if c['name'] == request.form['club']][0]
+    # Récupère les données dynamiques selon le contexte (normal ou test)
+    clubs_data = get_clubs()
+    competitions_data = get_competitions()
+
+    # Recherche du club et de la compétition envoyés dans le formulaire
+    competition = next((c for c in competitions_data if c['name'] == request.form['competition']), None)
+    club = next((c for c in clubs_data if c['name'] == request.form['club']), None)
+
     placesRequired = int(request.form['places'])
-    competition['numberOfPlaces'] = int(competition['numberOfPlaces'])-placesRequired
-    club['points'] = str(int(club['points']) - placesRequired) # Update points modification de cette ligne 
+
+     # Mise à jour du nombre de places et des points du club
+    competition['numberOfPlaces'] = str(int(competition['numberOfPlaces']) - placesRequired)
+    club['points'] = str(int(club['points']) - placesRequired) 
+
+
     flash('Great-booking complete!')
-    return render_template('welcome.html', club=club, competitions=competitions)
+    return render_template('welcome.html', club=club, competitions=competitions_data)
 
 
 # TODO: Add route for points display
