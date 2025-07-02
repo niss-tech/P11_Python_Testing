@@ -17,8 +17,16 @@ def loadCompetitions():
 app = Flask(__name__)
 app.secret_key = 'something_special'
 
-competitions = loadCompetitions()
+# Données globales par défaut
 clubs = loadClubs()
+competitions = loadCompetitions()
+
+# Accès aux données en fonction du contexte (tests ou run normal)
+def get_clubs():
+    return getattr(app, 'clubs', clubs)
+
+def get_competitions():
+    return getattr(app, 'competitions', competitions)
 
 @app.route('/')
 def index():
@@ -53,7 +61,9 @@ def purchasePlaces():
 
 @app.route('/points')
 def display_points():
-    return render_template('points.html', clubs=clubs)
+    clubs_data = get_clubs()  # Accès aux données dynamiques comme dans les autres routes
+    return render_template('points.html', clubs=clubs_data)
+
 
 
 
