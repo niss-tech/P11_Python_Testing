@@ -20,6 +20,13 @@ app.secret_key = 'something_special'
 competitions = loadCompetitions()
 clubs = loadClubs()
 
+# Accès aux données en fonction du contexte (tests ou run normal)
+def get_clubs():
+    return app.clubs if hasattr(app, 'clubs') else clubs
+
+def get_competitions():
+    return app.competitions if hasattr(app, 'competitions') else competitions
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -41,19 +48,35 @@ def book(competition,club):
         return render_template('welcome.html', club=club, competitions=competitions)
 
 
-@app.route('/purchasePlaces',methods=['POST'])
+@app.route('/purchasePlaces', methods=['POST'])
 def purchasePlaces():
-    competition = [c for c in competitions if c['name'] == request.form['competition']][0]
-    club = [c for c in clubs if c['name'] == request.form['club']][0]
-    placesRequired = int(request.form['places'])
+    clubs_data = get_clubs()
+    competitions_data = get_competitions()
 
+    competition = next((c for c in competitions_data if c['name'] == request.form['competition']), None)
+    club = next((c for c in clubs_data if c['name'] == request.form['club']), None)
+
+    if not competition or not club:
+        flash("Club or competition not found.")
+        return redirect(url_for('index'))
+
+    try:
+        placesRequired = int(request.form['places'])
+    except ValueError:
+        flash("Invalid number of places.")
+        return render_template('welcome.html', club=club, competitions=competitions_data)
+
+    # Nouvelle règle : maximum 12 places par réservation
     if placesRequired > 12:
         flash("Cannot book more than 12 places")
-        return render_template('booking.html', club=club, competition=competition)
+        return render_template('welcome.html', club=club, competitions=competitions_data)
 
-    competition['numberOfPlaces'] = int(competition['numberOfPlaces']) - placesRequired
+
+    # Mise à jour des données
+    club['points'] = str(int(club['points']) - placesRequired)
     flash('Great-booking complete!')
-    return render_template('welcome.html', club=club, competitions=competitions)
+    return render_template('welcome.html', club=club, competitions=competitions_data)
+
 
 
 
